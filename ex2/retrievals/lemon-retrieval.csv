@@ -1,0 +1,6 @@
+ ;tomato;banana;orange;apple; 
+Similarity;1.0;0.67;0.67;0.67; 
+cost;0.2;0.2;0.3;0.2; 
+name;tomato;banana;orange;apple; 
+size;small;medium;medium;medium; 
+type;vegetable;vegetable;vegetable;vegetable; 
