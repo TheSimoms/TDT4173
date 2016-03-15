@@ -1,0 +1,38 @@
+\documentclass{article}
+
+% Added for OUR project
+\usepackage[utf8]{inputenc} % For Norwegian characters
+\usepackage{tabulary} % For awesome table
+\usepackage{float} % For placement of figures
+\usepackage{graphicx} % For figures
+\usepackage{listings} % For code listings
+\usepackage[style=numeric, backend=bibtex, bibencoding=ascii]{biblatex} % For nice bibliography
+
+
+\addbibresource{references.bib} % Adds bibliography
+\graphicspath{{images/}} % Image path
+
+% Document
+\begin{document}
+
+% Disable page numbering
+\pagenumbering{gobble}
+
+% Title
+\title{\textbf{Exercise 3} \\ TDT4173 \\ About Spatial Pyramid Pooling in Deep Convolutional Networks for Visual Recognition}
+\author{Simon Borøy-Johnsen \& Magnus Gundersen \\ MTDT}
+\date{\today}
+\maketitle
+\clearpage
+
+% Enable page numbering
+\pagenumbering{arabic}
+
+% Content
+\input{content.tex}
+
+% Bibliography
+\clearpage
+\printbibliography
+
+\end{document}
