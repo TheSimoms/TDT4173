@@ -51,3 +51,35 @@ for classifier in classifiers:
     print('Results:')
     print(classification_report(testing_labels, predictions))
     print(confusion_matrix(testing_labels, predictions))
+
+"""
+    predictions = []
+    prediction_probabilities = []
+    most_probable_windows = []
+
+    # Classify the testing data
+    for i in range(len(testing_data)):
+    #for i in range(1):
+        windows, window_information = sliding_windows(testing_data[i])
+
+        probabilities = classifier.predict_proba(windows)
+
+        max_probability = -1.0
+        max_probability_index = None
+        max_probability_window_index = None
+
+        for j in range(len(probabilities)):
+            window_probabilities = probabilities[j]
+
+            highest_probability = max(window_probabilities)
+            most_probable_index = window_probabilities.tolist().index(highest_probability)
+
+            if highest_probability > max_probability:
+                max_probability = highest_probability
+                max_probability_index = most_probable_index
+                max_probability_window_index = j
+
+        predictions.append(max_probability_index)
+        prediction_probabilities.append(max_probability)
+        most_probable_windows.append(window_information[max_probability_window_index])
+"""
