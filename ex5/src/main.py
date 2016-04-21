@@ -1,8 +1,8 @@
-from utils import (prepare_data, extract_windows, load_arbitrary_image, index_to_letter,
-                   pre_process_data, flatten_feature_sets, draw_image_with_windows)
-
 from sklearn import svm, neighbors
 from sklearn.metrics import classification_report, confusion_matrix
+
+from utils import (prepare_data, extract_windows, load_arbitrary_image, index_to_letter, load_classifier,
+                   save_classifier, pre_process_data, flatten_feature_sets, draw_image_with_windows)
 
 
 def analysis():
@@ -81,23 +81,31 @@ def classify_windows(classifier, windows):
     return results, (max_probability, index_to_letter(max_probability_label), max_probability_window)
 
 
-def detect_arbitrary_image(image_path):
+def new_classifier():
+    print('Preparing data...')
+
+    training_data, testing_data, training_labels, testing_labels = prepare_data()
+
+    classifier = svm.SVC(kernel='poly', degree=3, probability=True)
+
+    print('Training classifier...')
+
+    classifier.fit(training_data, training_labels)
+
+    return classifier, training_data, testing_data, training_labels, testing_labels
+
+
+def detect_arbitrary_image(image_path, classifier):
     print('Extracting windows...')
 
     # Extract and flatten windows
     windows, window_positions = extract_windows(load_arbitrary_image(image_path))
     windows = flatten_feature_sets(pre_process_data(windows))
 
-    print('Preparing data...')
-
-    # Create a classifier: support vector classifier
-    training_data, testing_data, training_labels, testing_labels = prepare_data()
-
-    print('Training classifier...')
-
     # Set up classifier
-    classifier = svm.SVC(kernel='poly', degree=3, probability=True)
-    classifier.fit(training_data + testing_data, training_labels + testing_labels)
+    if classifier is None:
+        classifier, training_data, testing_data, training_labels, testing_labels = new_classifier()
+        classifier.fit(training_data + testing_data, training_labels + testing_labels)
 
     print('Detecting letters from windows...')
 
@@ -112,5 +120,14 @@ def detect_arbitrary_image(image_path):
 
 if input('Analysis? '):
     analysis()
+elif input('Detect? '):
+    if input('Load classifier model? '):
+        cls = load_classifier()
+    else:
+        cls = None
+
+    detect_arbitrary_image(raw_input('Path to image: '), cls)
 else:
-    detect_arbitrary_image(raw_input('Path to image: '))
+    cls, _, _, _, _ = new_classifier()
+
+    save_classifier(cls)

@@ -4,6 +4,8 @@ import numpy
 import Image
 import ImageDraw
 
+from pickle import load, dump
+
 from sklearn.preprocessing import scale
 
 from skimage.filter import scharr
@@ -115,3 +117,21 @@ def prepare_data():
 
     # Split data and labels into training and testing data and labels
     return training_data, testing_data, training_labels, testing_labels
+
+
+def load_classifier():
+    f = open(raw_input('Path to classifier: '), 'r')
+
+    classifier = load(f)
+
+    f.close()
+
+    return classifier
+
+
+def save_classifier(classifier):
+    f = open(raw_input('Path to save classifier: '), 'wr')
+
+    dump(classifier, f)
+
+    f.close()
