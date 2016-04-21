@@ -3,14 +3,14 @@ import numpy
 
 import Image
 import ImageDraw
-
-from pickle import load, dump
+import pickle
 
 from sklearn.preprocessing import scale
 
 from skimage.filter import scharr
 from sklearn.cross_validation import train_test_split
 from skimage.color import rgb2gray
+from skimage.data import load
 
 
 def flatten_feature_sets(feature_sets):
@@ -33,10 +33,7 @@ def load_image(directory_name, file_name):
 
 
 def load_arbitrary_image(image_path):
-    img = numpy.array(Image.open(image_path), dtype="float64")
-    img = rgb2gray(img)
-
-    return img
+    return rgb2gray(load(image_path))
 
 
 def extract_windows(image):
@@ -89,7 +86,7 @@ def draw_image_with_windows(image_path, windows):
                 (x, y+window_height),
                 (x, y)
             ),
-            fill=128
+            fill=255
         )
 
     img.show()
@@ -122,7 +119,7 @@ def prepare_data():
 def load_classifier():
     f = open(raw_input('Path to classifier: '), 'r')
 
-    classifier = load(f)
+    classifier = pickle.load(f)
 
     f.close()
 
@@ -132,6 +129,6 @@ def load_classifier():
 def save_classifier(classifier):
     f = open(raw_input('Path to save classifier: '), 'wr')
 
-    dump(classifier, f)
+    pickle.dump(classifier, f)
 
     f.close()
