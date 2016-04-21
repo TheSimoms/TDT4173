@@ -1,85 +1,116 @@
-from utils import load_data, pre_process_data, sliding_windows
+from utils import (prepare_data, extract_windows, load_arbitrary_image, index_to_letter,
+                   pre_process_data, flatten_feature_sets, draw_image_with_windows)
 
 from sklearn import svm, neighbors
-from sklearn.cross_validation import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 
-from skimage.color import rgb2gray
+
+def analysis():
+    print('Preparing data...')
+
+    # Create a classifier: support vector classifier
+    training_data, testing_data, training_labels, testing_labels = prepare_data()
+
+    classifiers = (
+        (svm.SVC(kernel='poly', degree=3, probability=True), 'Support vector machine'),
+        (neighbors.KNeighborsClassifier(n_neighbors=8, weights='distance'), 'K-nearest neighbours')
+    )
+
+    print('Ready to classify')
+
+    for classifier in classifiers:
+        print('\nClassifier: %s' % classifier[1])
+
+        # Build the pipeline
+        classifier = classifier[0]
+
+        print('Training...')
+
+        # Train the classifier using the training data
+        classifier.fit(training_data, training_labels)
+
+        print('Training complete')
+        print('Testing...')
+
+        predictions = classifier.predict(testing_data)
+
+        print('Testing complete')
+
+        # Print the prediction results
+        print('Results:')
+        print(confusion_matrix(testing_labels, predictions))
+        print(classification_report(testing_labels, predictions))
 
 
-# Load data and labels
-data, labels = load_data()
+def classify_windows(classifier, windows):
+    results = []
 
-# Pre process data
-data = pre_process_data(data)
+    # Predict the windows
+    probabilities = classifier.predict_proba(windows)
 
-# Split data and labels into training and testing data and labels
-training_data, testing_data, training_labels, testing_labels = train_test_split(data, labels, random_state=1)
+    # Maximum probability calculated
+    max_probability = -1
 
-# flattening training data
-training_data = [data.flatten() for data in training_data]
+    # Most likely label
+    max_probability_label = None
 
-# Create a classifier: support vector classifier
-classifiers = (
-    (neighbors.KNeighborsClassifier(weights='distance'), 'K-nearest neighbours'),
-    (svm.SVC(kernel='poly', degree=3, probability=True), 'Support vector machine'),
-)
+    # Index of most likely window
+    max_probability_window = None
 
-print('Ready to classify')
+    # Iterate all windows, find most likely label for each window
+    for i in range(len(probabilities)):
+        window_probability = probabilities[i]
 
-for classifier in classifiers:
-    print('\nClassifier: %s' % classifier[1])
+        # Maximum probability calculated
+        probability = max(window_probability)
 
-    # Build the pipeline
-    classifier = classifier[0]
+        # Most likely label
+        probability_index = window_probability.tolist().index(probability)
 
-    print('Training')
+        # Add probability and index to results
+        results.append((probability, probability_index))
 
-    # Train the classifier using the training data
-    classifier.fit(training_data, training_labels)
+        # Check if probability is greater than previously found maximum
+        if probability > max_probability:
+            # Update maximum variables
+            max_probability = probability
+            max_probability_label = probability_index
+            max_probability_window = i
 
-    print('Training complete')
-    print('Testing')
+    # Return results, and maximum likely label
+    return results, (max_probability, index_to_letter(max_probability_label), max_probability_window)
 
-    testing_data = [data.flatten() for data in testing_data]
 
-    predictions = classifier.predict(testing_data)
+def detect_arbitrary_image(image_path):
+    print('Extracting windows...')
 
-    print('Testing complete')
+    # Extract and flatten windows
+    windows, window_positions = extract_windows(load_arbitrary_image(image_path))
+    windows = flatten_feature_sets(pre_process_data(windows))
 
-    # Print the prediction results
-    print('Results:')
-    print(classification_report(testing_labels, predictions))
-    print(confusion_matrix(testing_labels, predictions))
+    print('Preparing data...')
 
-"""
-    predictions = []
-    prediction_probabilities = []
-    most_probable_windows = []
+    # Create a classifier: support vector classifier
+    training_data, testing_data, training_labels, testing_labels = prepare_data()
 
-    # Classify the testing data
-    for i in range(len(testing_data)):
-    #for i in range(1):
-        windows, window_information = sliding_windows(testing_data[i])
+    print('Training classifier...')
 
-        probabilities = classifier.predict_proba(windows)
+    # Set up classifier
+    classifier = svm.SVC(kernel='poly', degree=3, probability=True)
+    classifier.fit(training_data + testing_data, training_labels + testing_labels)
 
-        max_probability = -1.0
-        max_probability_index = None
-        max_probability_window_index = None
+    print('Detecting letters from windows...')
 
-        for j in range(len(probabilities)):
-            window_probabilities = probabilities[j]
+    # Classify the windows
+    results, (max_probability, max_probability_letter, max_probability_window) = classify_windows(classifier, windows)
 
-            highest_probability = max(window_probabilities)
-            most_probable_index = window_probabilities.tolist().index(highest_probability)
+    # Draw the most likely classification
+    draw_image_with_windows(image_path, [window_positions[max_probability_window]])
 
-            if highest_probability > max_probability:
-                max_probability = highest_probability
-                max_probability_index = most_probable_index
-                max_probability_window_index = j
+    # Print probability and classified label
+    print('Classified letter: %s, with probability %f' % (max_probability_letter, max_probability))
 
-        predictions.append(max_probability_index)
-        prediction_probabilities.append(max_probability)
-        most_probable_windows.append(window_information[max_probability_window_index])
-"""
+if input('Analysis? '):
+    analysis()
+else:
+    detect_arbitrary_image(raw_input('Path to image: '))

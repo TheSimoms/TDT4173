@@ -2,20 +2,56 @@ import os
 import numpy
 
 import Image
+import ImageDraw
 
 from sklearn.preprocessing import scale
 
 from skimage.filter import scharr
-from skimage.transform import rescale
+from sklearn.cross_validation import train_test_split
+from skimage.color import rgb2gray
+
+
+def flatten_feature_sets(feature_sets):
+    return [feature_set.flatten() for feature_set in feature_sets]
+
+
+def letter_to_index(letter):
+    return ord(letter) - 97
+
+
+def index_to_letter(index):
+    return chr(index + 97)
 
 
 def load_image(directory_name, file_name):
     letter = directory_name.split('/')[-1].lower()
-    correct_label = ord(letter) - 97
+    correct_label = letter_to_index(letter)
 
-    img = Image.open('%s/%s' % (directory_name, file_name))
+    return numpy.array(Image.open('%s/%s' % (directory_name, file_name)), dtype="float64"), correct_label
 
-    return numpy.array(img, dtype="float64"), correct_label
+
+def load_arbitrary_image(image_path):
+    img = numpy.array(Image.open(image_path), dtype="float64")
+    img = rgb2gray(img)
+
+    return img
+
+
+def extract_windows(image):
+    windows = []
+    window_positions = []
+
+    height, width = image.shape
+
+    window_width = 20
+    window_height = 20
+
+    for y in range(height-window_height+1):
+        for x in range(width-window_width+1):
+            windows.append(image[y:y+window_height, x:x+window_width])
+            window_positions.append((x, y, window_width, window_height))
+
+    return windows, window_positions
 
 
 def load_data():
@@ -35,6 +71,28 @@ def load_data():
     return data, labels
 
 
+def draw_image_with_windows(image_path, windows):
+    img = Image.open(image_path)
+
+    draw = ImageDraw.Draw(img)
+
+    for window in windows:
+        x, y, window_width, window_height = window
+
+        draw.line(
+            (
+                (x, y),
+                (x+window_width, y),
+                (x+window_width, y+window_height),
+                (x, y+window_height),
+                (x, y)
+            ),
+            fill=128
+        )
+
+    img.show()
+
+
 def pre_process_data(feature_sets):
     for i in range(len(feature_sets)):
         feature_sets[i] = scale(feature_sets[i])
@@ -43,18 +101,17 @@ def pre_process_data(feature_sets):
     return feature_sets
 
 
-def sliding_windows(feature_set):
-    windows = []
-    window_information = []
+def prepare_data():
+    # Load data and labels
+    data, labels = load_data()
 
-    for image_scale in numpy.arange(1, 3):
-        temp_image = rescale(feature_set, image_scale)
+    # Pre process data
+    data = pre_process_data(data)
 
-        height, width = temp_image.shape
+    training_data, testing_data, training_labels, testing_labels = train_test_split(data, labels, random_state=1)
 
-        for y in range(0, height-20+1, 10):
-            for x in range(0, width-20+1, 10):
-                windows.append(temp_image[x:x+20, y:y+20].flatten())
-                window_information.append(((x, y), image_scale))
+    training_data = flatten_feature_sets(training_data)
+    testing_data = flatten_feature_sets(testing_data)
 
-    return windows, window_information
+    # Split data and labels into training and testing data and labels
+    return training_data, testing_data, training_labels, testing_labels
